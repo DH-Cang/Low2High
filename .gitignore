@@ -1,0 +1,8 @@
+__pycache__/
+.vscode/
+blender_install/
+sd-pokemon-model/
+test_zyq_render/
+testoutput/
+
+tree_*.png
