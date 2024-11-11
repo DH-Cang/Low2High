@@ -1,7 +1,6 @@
 from __future__ import print_function, division
 import os
 import torch
-from skimage import io, transform
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
@@ -37,7 +36,7 @@ class CDH_ObjaversePbrDataset(Dataset):
 
         # check whether dataset file is valid
         directory_list = [
-            "blip_prompts",
+            "blip_prompt",
             "normal_image",
         ]
         for i, directory in enumerate(directory_list):
@@ -72,7 +71,18 @@ class CDH_ObjaversePbrDataset(Dataset):
         img_path = os.path.join(self.root_dir, f"normal_image", uid, f"normal_{view_idx}.webp")
         image = Image.open(img_path)
 
-        sample = {'image': image, 'text': text}
+        # multiply alpha channel
+        image_array = np.array(image)
+        r, g, b, a = image_array[:, :, 0], image_array[:, :, 1], image_array[:, :, 2], image_array[:, :, 3]
+        a[a > 0.0] = 1.0
+        r = (r * a ).astype(np.uint8)
+        g = (g * a ).astype(np.uint8)
+        b = (b * a ).astype(np.uint8)
+        new_image_array = np.stack([r, g, b], axis=-1)
+        new_image = Image.fromarray(new_image_array, mode='RGB')
+        new_image.save("./test_save.png")
+
+        sample = {'image': new_image, 'text': text}
 
         if self.transform:
             sample = self.transform(sample)
@@ -87,10 +97,6 @@ from datasets import load_dataset
 if __name__ == "__main__":
     my_dataset = CDH_ObjaversePbrDataset("./normal_prompt_dataset")
     print(len(my_dataset))
-
-    for i in range(len(my_dataset)):
-        print(my_dataset[i])
-
     # random_integers = [random.randrange(0, len(my_dataset)) for _ in range(1000)]
     # for _, index in enumerate(random_integers):
     #     print(my_dataset[index])

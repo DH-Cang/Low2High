@@ -817,7 +817,7 @@ def main():
     #     return {"pixel_values": pixel_values, "input_ids": input_ids}
 
     assert args.train_data_dir is not None
-    from objaverse_pbr_dataset import CDH_ObjaversePbrDataset
+    from CDH_objaverse_dataset_V2 import CDH_ObjaversePbrDataset
     train_dataset = CDH_ObjaversePbrDataset(args.train_data_dir)
 
     def preprocess_train(examples):
