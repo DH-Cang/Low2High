@@ -2,7 +2,6 @@ from __future__ import print_function, division
 import os
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import json
@@ -80,9 +79,8 @@ class CDH_ObjaversePbrDataset(Dataset):
         b = (b * a ).astype(np.uint8)
         new_image_array = np.stack([r, g, b], axis=-1)
         new_image = Image.fromarray(new_image_array, mode='RGB')
-        new_image.save("./test_save.png")
 
-        sample = {'image': new_image, 'text': text}
+        sample = {'image': new_image, 'text': text, 'uid': uid}
 
         if self.transform:
             sample = self.transform(sample)
@@ -97,6 +95,8 @@ from datasets import load_dataset
 if __name__ == "__main__":
     my_dataset = CDH_ObjaversePbrDataset("./normal_prompt_dataset")
     print(len(my_dataset))
+    for i in range(len(my_dataset)):
+        my_dataset[i].save("test.png")
     # random_integers = [random.randrange(0, len(my_dataset)) for _ in range(1000)]
     # for _, index in enumerate(random_integers):
     #     print(my_dataset[index])
