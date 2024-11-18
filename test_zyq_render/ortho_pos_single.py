@@ -88,9 +88,29 @@ def delete_useless_obj():
     n = len(delete_flag)
     if n == 1:
         return
+
+    # 保留一个对象作为活动对象，防止产生 Context missing active object 错误
+    active_obj = None
     for i in range(n):
         if not delete_flag[i]:
+            active_obj = bpy.data.objects.get(obj_name[i])
+            break
+
+    if active_obj is None:
+        print("No objects left to keep as active.")
+        return
+
+    # 设置活动对象
+    bpy.context.view_layer.objects.active = active_obj
+
+    for i in range(n):
+        print(f"i=={i}")
+        if not delete_flag[i]:
             continue
+
+        # 重新设置活动对象，防止产生 Context missing active object 错误
+        bpy.context.view_layer.objects.active = active_obj
+
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
         bpy.ops.object.select_all(action='DESELECT')
         obj = bpy.data.objects.get(obj_name[i])
@@ -98,7 +118,6 @@ def delete_useless_obj():
             obj.select_set(True)
             bpy.context.view_layer.objects.active = obj
             bpy.ops.object.delete()
-
 
 def scene_bbox(single_obj=None, ignore_matrix=False):
     bbox_min = (math.inf,) * 3
@@ -531,10 +550,13 @@ def save_images(object_file: str, viewidx: int) -> None:
     links.new(divide_node.outputs['Vector'], emission_node.inputs['Color'])
     links.new(emission_node.outputs['Emission'], output_node.inputs['Surface'])
 
-    
     for obj in bpy.data.objects:
         if obj.type == "MESH":
-            obj.data.materials[0] = material
+            if not obj.data.materials:
+                obj.data.materials.append(material)
+            else:
+                obj.data.materials[0] = material
+            obj.active_material = material
     
     bproc.renderer.enable_depth_output(activate_antialiasing=False)
     # Render the scene

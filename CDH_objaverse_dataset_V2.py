@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms, utils
 import json
 from PIL import Image
+from tqdm import tqdm
 
 class CDH_ObjaversePbrDataset(Dataset):
 
@@ -68,25 +69,58 @@ class CDH_ObjaversePbrDataset(Dataset):
             text = data[uid]
 
         img_path = os.path.join(self.root_dir, f"normal_image", uid, f"normal_{view_idx}.webp")
-        image = Image.open(img_path)
 
-        # multiply alpha channel
-        image_array = np.array(image)
-        r, g, b, a = image_array[:, :, 0], image_array[:, :, 1], image_array[:, :, 2], image_array[:, :, 3]
-        a[a > 0.0] = 1.0
-        r = (r * a ).astype(np.uint8)
-        g = (g * a ).astype(np.uint8)
-        b = (b * a ).astype(np.uint8)
-        new_image_array = np.stack([r, g, b], axis=-1)
-        new_image = Image.fromarray(new_image_array, mode='RGB')
+        try:
+            image = Image.open(img_path)
 
-        sample = {'image': new_image, 'text': text, 'uid': uid}
+            # multiply alpha channel
+            image_array = np.array(image)
+            r, g, b, a = image_array[:, :, 0], image_array[:, :, 1], image_array[:, :, 2], image_array[:, :, 3]
+            a[a > 0.0] = 1.0
+            r = (r * a ).astype(np.uint8)
+            g = (g * a ).astype(np.uint8)
+            b = (b * a ).astype(np.uint8)
+            new_image_array = np.stack([r, g, b], axis=-1)
+            new_image = Image.fromarray(new_image_array, mode='RGB')
+
+            sample = {'image': new_image, 'text': text, 'uid': uid}
+        except FileNotFoundError:
+            sample = {'image': None, 'text': text, 'uid': uid}
+            print(f"uid {uid} image not load correctly")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            exit()
 
         if self.transform:
             sample = self.transform(sample)
 
         return sample
     
+    def check_completion(self):
+        num = self.__len__()
+
+        file_path = os.path.join(self.root_dir, f"normal_image")
+        uid_list = sorted(os.listdir(file_path))
+
+        prompt_file_path = os.path.join(self.root_dir, f"blip_prompt", f"merged_prompt.json")
+        with open(prompt_file_path, 'r', encoding='utf-8') as file:
+            prompt_data = json.load(file)
+
+        error_uid = []
+        for idx in tqdm(range(num), desc="scanning data", total=num):
+            # mod idx by 16 to determine which view
+            view_idx = idx % self.VIEWS_PER_MESH
+            idx = idx // self.VIEWS_PER_MESH
+            uid = uid_list[idx]
+
+            assert uid in prompt_data
+            text = prompt_data[uid]
+
+            img_path = os.path.join(self.root_dir, f"normal_image", uid, f"normal_{view_idx}.webp")
+
+            if os.path.exists(img_path) == False and uid not in error_uid:
+                error_uid.append(uid)
+        return error_uid
 
 
 # test code

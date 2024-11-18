@@ -3,5 +3,10 @@ __pycache__/
 blender_install/
 sd-pokemon-model/
 testoutput/
+normal_prompt_dataset/
 
 tree_*.png
+validation_result/
+sd-normal-model/
+
+error_uid.json

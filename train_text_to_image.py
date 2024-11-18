@@ -1120,7 +1120,8 @@ def main():
                                 weight_dtype,
                                 global_step,
                             )
-                            images[0].save(f"./tree_{global_step}.png")
+                            for i, image in enumerate(images):
+                                image.save(f"./validation_result/step{global_step}_prompt{i}.png")
                             if args.use_ema:
                                 # Switch back to the original UNet parameters.
                                 ema_unet.restore(unet.parameters())

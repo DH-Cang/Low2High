@@ -1,1 +1,0 @@
-blenderproc run --blender-install-path /home/xuhao/DehanChen/blender_install ortho_pos_single.py --object_path ./ea215b2cb8c2408ea8a65500255bf766.glb --view 0 --output_folder ../normal_prompt_dataset/normal_image --ortho_scale 1.35 --resolution 512 
