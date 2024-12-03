@@ -43,7 +43,8 @@ class CDH_ObjaversePbrDataset(Dataset):
         assert os.path.exists(os.path.join(root_dir, "correct_final_prompt.json"))
 
         # calculate dataset length
-        uid_list = sorted(os.listdir(root_dir))
+        entries = sorted(os.listdir(self.root_dir))
+        uid_list = [entry for entry in entries if os.path.isdir(os.path.join(self.root_dir, entry))]
         self.UID_NUM = len(uid_list)
 
 
@@ -57,7 +58,9 @@ class CDH_ObjaversePbrDataset(Dataset):
         idx = idx // self.VIEWS_PER_MESH
 
         # file_path = os.path.join(self.root_dir, f"normal_image")
-        uid_list = sorted(os.listdir(self.root_dir))
+
+        entries = sorted(os.listdir(self.root_dir))
+        uid_list = [entry for entry in entries if os.path.isdir(os.path.join(self.root_dir, entry))]
         uid = uid_list[idx]
 
         prompt_file_path = os.path.join(self.root_dir, "correct_final_prompt.json")
@@ -65,11 +68,14 @@ class CDH_ObjaversePbrDataset(Dataset):
             data = json.load(file)
             assert uid in data
             text = data[uid]
+        
+        # assert uid in self.prompt_data
+        # text = self.prompt_data[uid]
 
-        img_path = os.path.join(self.root_dir, uid, f"normal_image", f"{view_idx:03d}.png")
+        img_path = os.path.join(self.root_dir, uid, f"normal", f"{view_idx:03d}.png")
 
         try:
-            image = Image.open(img_path)
+            image = Image.open(img_path).convert('RGB')
 
             # # multiply alpha channel
             # image_array = np.array(image)
@@ -87,8 +93,10 @@ class CDH_ObjaversePbrDataset(Dataset):
             sample = {'image': None, 'text': text, 'uid': uid}
             print(f"uid {uid} image not load correctly")
         except Exception as e:
+            print(f" ============================= current path {img_path}")
+            print(f"============================== prompt {text}")
             print(f"An unexpected error occurred: {e}")
-            exit()
+            # exit()
 
         if self.transform:
             sample = self.transform(sample)
@@ -98,7 +106,8 @@ class CDH_ObjaversePbrDataset(Dataset):
     def check_completion(self):
         num = self.__len__()
 
-        uid_list = sorted(os.listdir(self.root_dir))
+        entries = sorted(os.listdir(self.root_dir))
+        uid_list = [entry for entry in entries if os.path.isdir(os.path.join(self.root_dir, entry))]
 
         prompt_file_path = os.path.join(self.root_dir, "correct_final_prompt.json")
         with open(prompt_file_path, 'r', encoding='utf-8') as file:
@@ -111,10 +120,13 @@ class CDH_ObjaversePbrDataset(Dataset):
             idx = idx // self.VIEWS_PER_MESH
             uid = uid_list[idx]
 
-            assert uid in prompt_data
+            if uid not in prompt_data:
+                print(f"{uid} not in prompt data")
+                continue
+
             text = prompt_data[uid]
 
-            img_path = os.path.join(self.root_dir, uid, f"normal_image", f"{view_idx:03d}.png")
+            img_path = os.path.join(self.root_dir, uid, f"normal", f"{view_idx:03d}.png")
 
             if os.path.exists(img_path) == False and uid not in error_uid:
                 error_uid.append(uid)

@@ -6,7 +6,9 @@ testoutput/
 
 tree_*.png
 validation_result/
+validation_result-6epoch/
 sd-normal-model/
+sd-normal-model-finetuned-6epoch/
 
 error_uid.json
 hubtoken.txt

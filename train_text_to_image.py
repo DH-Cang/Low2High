@@ -817,7 +817,7 @@ def main():
     #     return {"pixel_values": pixel_values, "input_ids": input_ids}
 
     assert args.train_data_dir is not None
-    from CDH_objaverse_dataset_V2 import CDH_ObjaversePbrDataset
+    from CDH_objaverse_dataset_V3 import CDH_ObjaversePbrDataset
     train_dataset = CDH_ObjaversePbrDataset(args.train_data_dir)
 
     def preprocess_train(examples):
@@ -837,7 +837,7 @@ def main():
     def collate_fn(examples):
         # preprocess: image PIL to tensor; text prompt to tokenized id
         for example in examples:
-            image = example['image'].convert("RGB")
+            image = example['image']
             example["image_tensor"] = train_transforms(image)
             example["input_ids"] = tokenizer(
                 example["text"], max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
@@ -1104,27 +1104,27 @@ def main():
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
                         accelerator.save_state(save_path)
                         logger.info(f"Saved state to {save_path}")
-
-                        if args.validation_prompts is not None and epoch % args.validation_epochs == 0:
-                            if args.use_ema:
-                                # Store the UNet parameters temporarily and load the EMA parameters to perform inference.
-                                ema_unet.store(unet.parameters())
-                                ema_unet.copy_to(unet.parameters())
-                            images = log_validation(
-                                vae,
-                                text_encoder,
-                                tokenizer,
-                                unet,
-                                args,
-                                accelerator,
-                                weight_dtype,
-                                global_step,
-                            )
-                            for i, image in enumerate(images):
-                                image.save(f"./validation_result/step{global_step}_prompt{i}.png")
-                            if args.use_ema:
-                                # Switch back to the original UNet parameters.
-                                ema_unet.restore(unet.parameters())
+                  
+                        # if args.validation_prompts is not None and epoch % args.validation_epochs == 0:
+                        #     if args.use_ema:
+                        #         # Store the UNet parameters temporarily and load the EMA parameters to perform inference.
+                        #         ema_unet.store(unet.parameters())
+                        #         ema_unet.copy_to(unet.parameters())
+                        #     images = log_validation(
+                        #         vae,
+                        #         text_encoder,
+                        #         tokenizer,
+                        #         unet,
+                        #         args,
+                        #         accelerator,
+                        #         weight_dtype,
+                        #         global_step,
+                        #     )
+                        #     for i, image in enumerate(images):
+                        #         image.save(f"./validation_result/step{global_step}_prompt{i}.png")
+                        #     if args.use_ema:
+                        #         # Switch back to the original UNet parameters.
+                        #         ema_unet.restore(unet.parameters())
 
             logs = {"step_loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
@@ -1138,7 +1138,7 @@ def main():
                     # Store the UNet parameters temporarily and load the EMA parameters to perform inference.
                     ema_unet.store(unet.parameters())
                     ema_unet.copy_to(unet.parameters())
-                log_validation(
+                images = log_validation(
                     vae,
                     text_encoder,
                     tokenizer,
@@ -1148,6 +1148,8 @@ def main():
                     weight_dtype,
                     global_step,
                 )
+                for i, image in enumerate(images):
+                    image.save(f"./validation_result/epoch{epoch}_step{global_step}_prompt{i}.png")
                 if args.use_ema:
                     # Switch back to the original UNet parameters.
                     ema_unet.restore(unet.parameters())
